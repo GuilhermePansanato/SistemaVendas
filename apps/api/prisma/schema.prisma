@@ -11,6 +11,17 @@ enum UserRole {
   ADMIN
 }
 
+enum PlatformUserRole {
+  SUPER_ADMIN
+}
+
+enum SystemModuleKey {
+  DASHBOARD
+  CUSTOMERS
+  SALES
+  REMINDERS
+}
+
 enum SaleStatus {
   OPEN
   PARTIALLY_PAID
@@ -52,8 +63,93 @@ enum ReminderStatus {
   CANCELED
 }
 
+enum ReminderFailureReason {
+  WHATSAPP_DISCONNECTED
+  AUTH_FAILURE
+  DELIVERY_ERROR
+  UNKNOWN
+}
+
+enum WhatsAppConnectionStatus {
+  DISCONNECTED
+  PENDING_QR
+  CONNECTING
+  CONNECTED
+  AUTH_FAILURE
+}
+
+enum WhatsAppConnectionEventType {
+  QR_GENERATED
+  AUTHENTICATED
+  READY
+  DISCONNECTED
+  AUTH_FAILURE
+  SEND_BLOCKED
+}
+
+model Company {
+  id                       String                      @id @default(cuid())
+  name                     String
+  slug                     String                      @unique
+  isActive                 Boolean                     @default(true)
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
+  users                    User[]
+  customers                Customer[]
+  sales                    Sale[]
+  reminderSettings         ReminderSettings?
+  reminderRules            ReminderRule[]
+  reminderMessages         ReminderMessage[]
+  whatsAppConnection       WhatsAppConnection?
+  whatsAppConnectionEvents WhatsAppConnectionEvent[]
+  moduleSubscriptions      CompanyModuleSubscription[]
+
+  @@index([isActive])
+}
+
+model PlatformUser {
+  id           String           @id @default(cuid())
+  name         String
+  email        String           @unique
+  passwordHash String
+  role         PlatformUserRole @default(SUPER_ADMIN)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model SystemModule {
+  key           SystemModuleKey            @id
+  name          String
+  description   String?
+  isActive      Boolean                    @default(true)
+  isTenantVisible Boolean                  @default(true)
+  sortOrder     Int                        @default(0)
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+  subscriptions CompanyModuleSubscription[]
+
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+model CompanyModuleSubscription {
+  companyId  String
+  moduleKey  SystemModuleKey
+  isActive   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  company    Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  module     SystemModule  @relation(fields: [moduleKey], references: [key], onDelete: Restrict)
+
+  @@id([companyId, moduleKey])
+  @@index([companyId, isActive])
+  @@index([moduleKey, isActive])
+}
+
 model User {
   id           String   @id @default(cuid())
+  companyId    String
   name         String
   email        String   @unique
   passwordHash String
@@ -61,10 +157,14 @@ model User {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
 }
 
 model Customer {
   id               String            @id @default(cuid())
+  companyId        String
   name             String
   document         String?           @db.VarChar(20)
   phone            String            @db.VarChar(20)
@@ -74,15 +174,18 @@ model Customer {
   isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
   sales            Sale[]
   reminderMessages ReminderMessage[]
 
+  @@index([companyId])
   @@index([name])
   @@index([whatsappPhone])
 }
 
 model Sale {
   id               String      @id @default(cuid())
+  companyId        String
   customerId       String
   description      String?
   totalAmount      Decimal     @db.Decimal(10, 2)
@@ -92,9 +195,11 @@ model Sale {
   status           SaleStatus  @default(OPEN)
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Restrict)
   customer         Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
   installments     Installment[]
 
+  @@index([companyId])
   @@index([customerId])
   @@index([saleDate])
   @@index([status])
@@ -129,16 +234,33 @@ model Payment {
   method        PaymentMethod
   reference     String?
   notes         String?
+  reversedAt    DateTime?
+  reversedByUserId String?
+  reversalReason String?
   createdAt     DateTime      @default(now())
   installment   Installment   @relation(fields: [installmentId], references: [id], onDelete: Restrict)
 
   @@index([installmentId])
   @@index([paidAt])
   @@index([method])
+  @@index([reversedAt])
+}
+
+model ReminderSettings {
+  id                 String   @id @default(cuid())
+  companyId          String   @unique
+  defaultSendTime    String   @default("09:00") @db.VarChar(5)
+  lastAutomatedRunAt DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
 }
 
 model ReminderRule {
   id          String              @id @default(cuid())
+  companyId   String
   name        String
   triggerType ReminderTriggerType
   daysBefore  Int                 @default(0)
@@ -146,38 +268,91 @@ model ReminderRule {
   isActive    Boolean             @default(true)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
+  company     Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
   messages    ReminderMessage[]
 
-  @@unique([triggerType, daysBefore])
+  @@unique([companyId, triggerType, daysBefore])
+  @@index([companyId])
   @@index([isActive])
 }
 
 model ReminderMessage {
   id                String              @id @default(cuid())
+  companyId         String
   customerId        String
   installmentId     String
   ruleId            String?
+  whatsappConnectionId String?
   channel           ReminderChannel     @default(WHATSAPP)
   triggerType       ReminderTriggerType
   triggerDate       DateTime
   scheduledFor      DateTime?
+  attemptedAt       DateTime?
   sentAt            DateTime?
   status            ReminderStatus      @default(PENDING)
+  retryCount        Int                 @default(0)
+  failureReason     ReminderFailureReason?
   messageBody       String
   providerMessageId String?
   providerPayload   Json?
   errorMessage      String?
   createdAt         DateTime            @default(now())
+  company           Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
   customer          Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
   installment       Installment         @relation(fields: [installmentId], references: [id], onDelete: Restrict)
   rule              ReminderRule?       @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  whatsappConnection WhatsAppConnection? @relation(fields: [whatsappConnectionId], references: [id], onDelete: SetNull)
 
   @@unique([installmentId, triggerType, triggerDate])
+  @@index([companyId])
   @@index([customerId])
   @@index([installmentId])
   @@index([ruleId])
+  @@index([whatsappConnectionId])
   @@index([status])
+  @@index([failureReason])
   @@index([scheduledFor])
+  @@index([attemptedAt])
   @@index([sentAt])
 }
 
+model WhatsAppConnection {
+  id                 String                     @id @default(cuid())
+  companyId          String                     @unique
+  clientKey          String                     @unique @default("default")
+  provider           String                     @default("WHATSAPP_WEB_JS")
+  status             WhatsAppConnectionStatus   @default(DISCONNECTED)
+  displayName        String?
+  phoneNumber        String?
+  qrCode             String?
+  sessionPath        String?
+  lastConnectedAt    DateTime?
+  lastDisconnectedAt DateTime?
+  lastQrGeneratedAt  DateTime?
+  lastError          String?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  company            Company                    @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  events             WhatsAppConnectionEvent[]
+  reminderMessages   ReminderMessage[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([lastConnectedAt])
+}
+
+model WhatsAppConnectionEvent {
+  id           String                       @id @default(cuid())
+  companyId    String
+  connectionId String
+  type         WhatsAppConnectionEventType
+  message      String?
+  payload      Json?
+  createdAt    DateTime                     @default(now())
+  company      Company                      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  connection   WhatsAppConnection           @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@index([connectionId, createdAt])
+  @@index([type])
+}

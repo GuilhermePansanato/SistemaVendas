@@ -19,7 +19,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "seed:admin": "node --env-file=.env -r ts-node/register prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.4",
@@ -27,6 +28,7 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.9",
     "@nestjs/jwt": "^11.0.1",
+    "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.9",
     "@prisma/client": "^6.19.0",
@@ -37,8 +39,10 @@
     "ioredis": "^5.8.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "whatsapp-web.js": "^1.34.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

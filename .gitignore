@@ -19,3 +19,7 @@ apps/web/.env
 apps/api/prisma/dev.db
 apps/api/prisma/*.db
 apps/api/prisma/*.db-journal
+.codex-logs
+apps/api/.sessions
+apps/api/.wwebjs_cache
+apps/api/.wwebjs_auth

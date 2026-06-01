@@ -1,94 +1,66 @@
 import { NavLink, Outlet } from 'react-router-dom';
-
-const navigation = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/clientes', label: 'Clientes' },
-  { to: '/vendas', label: 'Vendas' },
-  { to: '/parcelas', label: 'Parcelas' },
-  { to: '/pagamentos', label: 'Pagamentos' },
-  { to: '/cobrancas', label: 'Cobrancas' },
-];
+import { useAuth } from '../features/auth/context/use-auth';
+import { getAvailableNavigation } from '../features/auth/lib/module-access';
 
 export function AppShell() {
+  const { logout, user } = useAuth();
+  const navigation = getAvailableNavigation(user?.modules);
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(238,116,85,0.18),_transparent_32%),linear-gradient(180deg,_#f8f1e8_0%,_#f1e3d0_100%)] text-slate-900">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <aside className="rounded-[32px] border border-white/70 bg-white/75 p-6 shadow-[0_24px_80px_rgba(72,52,35,0.14)] backdrop-blur">
-          <div className="rounded-[28px] bg-slate-950 px-5 py-6 text-white">
-            <p className="text-xs uppercase tracking-[0.28em] text-orange-200">
-              Sistema de vendas
-            </p>
-            <h1 className="mt-3 font-[Aptos_Display,Aptos,Segoe_UI,sans-serif] text-3xl font-semibold tracking-tight">
-              Clientes, parcelas e cobrancas em um painel so.
-            </h1>
-            <p className="mt-4 text-sm leading-6 text-slate-300">
-              Base inicial do projeto com foco em operacao real e apresentacao
-              profissional para portfolio.
-            </p>
-          </div>
+    <div className="h-screen overflow-hidden bg-slate-100 text-slate-900">
+      <div className="flex h-full min-h-0 flex-col lg:flex-row">
+        <aside className="shrink-0 border-b border-slate-200 bg-white lg:w-64 lg:border-b-0 lg:border-r">
+          <div className="flex h-full flex-col p-4">
+            <div className="px-2 py-5">
+              <p className="text-sm font-semibold tracking-[0.24em] text-slate-700">
+                Sistema Vendas
+              </p>
+            </div>
 
-          <nav className="mt-6 space-y-2">
-            {navigation.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/'}
-                className={({ isActive }) =>
-                  [
-                    'flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium transition',
-                    isActive
-                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                      : 'bg-white/80 text-slate-700 hover:bg-slate-900 hover:text-white',
-                  ].join(' ')
-                }
-              >
-                <span>{item.label}</span>
-                <span className="text-xs uppercase tracking-[0.24em]">Go</span>
-              </NavLink>
-            ))}
-          </nav>
+            <nav className="flex flex-wrap gap-2 py-2 lg:flex-1 lg:flex-col lg:flex-nowrap">
+              {navigation.length > 0 ? (
+                navigation.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end
+                    className={({ isActive }) =>
+                      [
+                        'flex items-center rounded-xl border border-transparent px-4 py-3 text-sm font-medium transition duration-200',
+                        isActive
+                          ? 'bg-slate-900 text-white shadow-sm'
+                          : 'text-slate-600 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-900 hover:shadow-sm',
+                      ].join(' ')
+                    }
+                  >
+                    {({ isActive }) => (
+                      <span
+                        className={isActive ? 'font-semibold text-white' : undefined}
+                      >
+                        {item.label}
+                      </span>
+                    )}
+                  </NavLink>
+                ))
+              ) : (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  Nenhum modulo ativo.
+                </div>
+              )}
+            </nav>
 
-          <div className="mt-6 rounded-[28px] border border-slate-200 bg-slate-50 p-5">
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-              Proximo marco
-            </p>
-            <p className="mt-3 text-sm leading-6 text-slate-700">
-              Conectar autenticacao, cadastro de clientes e criacao de vendas
-              com geracao automatica de parcelas.
-            </p>
+            <button
+              type="button"
+              onClick={logout}
+              className="mt-4 rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700 transition duration-200 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 hover:shadow-sm"
+            >
+              Sair
+            </button>
           </div>
         </aside>
 
-        <main className="flex min-h-[calc(100vh-3rem)] flex-col rounded-[32px] border border-white/70 bg-white/70 p-5 shadow-[0_24px_80px_rgba(72,52,35,0.12)] backdrop-blur lg:p-6">
-          <header className="flex flex-col gap-4 rounded-[28px] bg-slate-950 px-6 py-5 text-white lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.28em] text-teal-200">
-                MVP em construcao
-              </p>
-              <h2 className="mt-2 font-[Aptos_Display,Aptos,Segoe_UI,sans-serif] text-2xl font-semibold">
-                Arquitetura limpa para um fluxo de cobranca simples e confiavel
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-right text-sm lg:min-w-[320px]">
-              <div className="rounded-2xl bg-white/10 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-300">
-                  Frontend
-                </p>
-                <p className="mt-2 font-semibold text-orange-200">
-                  React + Vite
-                </p>
-              </div>
-              <div className="rounded-2xl bg-white/10 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-300">
-                  Backend
-                </p>
-                <p className="mt-2 font-semibold text-teal-200">Nest + Prisma</p>
-              </div>
-            </div>
-          </header>
-
-          <div className="mt-6 flex-1">
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-8">
+          <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
         </main>

@@ -23,6 +23,7 @@ Stack:
 - bcrypt
 - BullMQ
 - Redis
+- `whatsapp-web.js` no MVP
 
 Estrategia:
 
@@ -138,6 +139,7 @@ Diretrizes:
 4. O modulo de lembretes cria um registro de envio.
 5. O modulo de WhatsApp dispara a mensagem.
 6. O resultado do envio e persistido para auditoria e acompanhamento.
+7. Se a conexao estiver indisponivel, o envio e bloqueado e o sistema registra o alerta operacional.
 
 ## Convencoes Iniciais
 
@@ -146,3 +148,4 @@ Diretrizes:
 - regras de status devem ser centralizadas no dominio
 - integracoes externas devem ser acessadas por portas e adapters
 - logs de envio nao devem ser apagados
+- o modulo `reminders` deve depender de uma porta de envio, nao da biblioteca `whatsapp-web.js` diretamente

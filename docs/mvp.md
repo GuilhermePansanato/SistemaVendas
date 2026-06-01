@@ -78,6 +78,8 @@ Status do MVP:
 - enviar lembrete automatico em `D0`
 - registrar cada mensagem enviada
 - permitir reprocessamento controlado sem duplicar lembrete
+- manter o status da conexao do WhatsApp visivel no sistema
+- avisar no sistema quando houver envio bloqueado por desconexao
 
 ## Fora do MVP
 
@@ -108,4 +110,4 @@ Status do MVP:
 4. Pagamentos e atualizacao de status.
 5. Dashboard financeiro.
 6. Filas com BullMQ e Redis.
-7. Integracao com WhatsApp Cloud API.
+7. Integracao com `whatsapp-web.js` para o MVP e adapter preparado para migracao futura para a API oficial.
